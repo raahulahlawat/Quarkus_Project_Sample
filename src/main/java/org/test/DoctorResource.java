@@ -1,6 +1,5 @@
 package org.test;
 
-import jakarta.inject.Inject;
 import jakarta.transaction.Transactional;
 import org.eclipse.microprofile.graphql.*;
 import java.util.List;
@@ -8,13 +7,17 @@ import java.util.List;
 @GraphQLApi
 public class DoctorResource {
 
-    @Inject
-    DoctorService doctorService;
+    private final DoctorService doctorService;
 
-    // Query to fetch all doctors
+    // Constructor injection
+    public DoctorResource(DoctorService doctorService) {
+        this.doctorService = doctorService;
+    }
+
+    // Query to fetch all doctors with pagination
     @Query("allDoctors")
-    public List<Doctor> getAllDoctors() {
-        return doctorService.getAllDoctors();
+    public List<Doctor> getAllDoctors(@Name("pageNumber") int pageNumber, @Name("pageSize") int pageSize) {
+        return doctorService.getAllDoctors(pageNumber, pageSize);
     }
 
     // Mutation to create a new doctor
@@ -27,13 +30,6 @@ public class DoctorResource {
         }
         return createdDoctor;
     }
-
-    // Query to fetch a doctor by ID
-    // @Query
-    // public Doctor getDoctor(@Name("id") Long id) throws GraphQLException {
-    //     return doctorService.getDoctorById(id)
-    //             .orElseThrow(() -> new GraphQLException("Doctor not found."));
-    // }
 
     // Mutation to update a doctor by ID
     @Mutation
@@ -49,13 +45,11 @@ public class DoctorResource {
     // Mutation to delete a doctor by ID
     @Mutation
     @Transactional
-    public boolean deleteDoctor(@Name("id") String id) throws GraphQLException {
-        Long doctorId = Long.parseLong(id);
-        Object deleted = doctorService.deleteDoctor(doctorId);
-        if ((boolean) (deleted = null != null)) {
+    public boolean deleteDoctor(@Name("id") Long id) throws GraphQLException {
+        boolean deleted = doctorService.deleteDoctor(id);
+        if (!deleted) {
             throw new GraphQLException("Failed to delete doctor.");
         }
-        return (boolean) deleted;
+        return deleted;
     }
-
 }
